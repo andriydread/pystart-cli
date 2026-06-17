@@ -1,0 +1,17 @@
+[project]
+name = "pystart"
+version = "0.1.0"
+description = "A CLI tool to scaffold new Python projects"
+dependencies = [
+    "typer>=0.9.0",
+    "rich>=13.0.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+# This defines the command name and the function it points to.
+# We will use this in Ticket 6, but it's good to define it now.
+[project.scripts]
+pystart = "pystart.main:app"
