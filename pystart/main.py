@@ -99,10 +99,24 @@ def create(project_name: str):
         with console.status(
             "[bold blue]Initializing Git repository...", spinner="dots"
         ):
+            # Run git init
             subprocess.run(
                 ["git", "init"], cwd=project_path, check=True, capture_output=True
             )
-        console.print("[green]✔[/green] Initialized Git repository.")
+            # Stage all generated files (README, main.py, .gitignore)
+            subprocess.run(
+                ["git", "add", "."], cwd=project_path, check=True, capture_output=True
+            )
+            # Create the very first commit
+            subprocess.run(
+                ["git", "commit", "-m", "chore: initial project scaffold"],
+                cwd=project_path,
+                check=True,
+                capture_output=True,
+            )
+        console.print(
+            "[green]✔[/green] Initialized Git repository and created initial commit."
+        )
 
         # Create venv
         with console.status(
