@@ -2,6 +2,11 @@ import subprocess  # 1. Added subprocess import
 from pathlib import Path
 
 import typer
+from rich.console import Console
+
+console = Console()
+err_console = Console(stderr=True)
+
 
 # --- Templates ---
 
@@ -63,58 +68,69 @@ def create(project_name: str):
     project_path = Path.cwd() / project_name
 
     if project_path.exists():
-        typer.echo(
-            f"Error: A directory or file named '{project_name}' already exists here.",
-            err=True,
+        err_console.print(
+            f"[bold red]Error:[/bold red] A directory or file named '[yellow]{project_name}[/yellow]' already exists here."
         )
         raise typer.Exit(code=1)
 
     try:
-        # 1. Create directory
+        # Create dir
         project_path.mkdir(parents=True, exist_ok=False)
-        typer.echo(f"Successfully created directory: {project_path}")
+        console.print(
+            f"[green]✔[/green] Created directory: [blue]{project_path}[/blue]"
+        )
 
-        # 2. Generate README.md
+        # Generate README.md
         readme_path = project_path / "README.md"
         readme_path.write_text(get_readme_content(project_name), encoding="utf-8")
-        typer.echo("Generated: README.md")
+        console.print("[green]✔[/green] Generated: README.md")
 
-        # 3. Generate .gitignore
+        # Generate .gitignore
         gitignore_path = project_path / ".gitignore"
         gitignore_path.write_text(GITIGNORE_CONTENT, encoding="utf-8")
-        typer.echo("Generated: .gitignore")
+        console.print("[green]✔[/green] Generated: .gitignore")
 
-        # 4. Generate main.py
+        # Generate main.py
         main_py_path = project_path / "main.py"
         main_py_path.write_text(MAIN_PY_CONTENT, encoding="utf-8")
-        typer.echo("Generated: main.py")
+        console.print("[green]✔[/green] Generated: main.py")
 
-        # 5. Initialize Git Repository
-        typer.echo("Initializing Git repository...")
-        # Passing the command as a list protects against shell injection vulnerabilities
-        subprocess.run(
-            ["git", "init"], cwd=project_path, check=True, capture_output=True
-        )
-        typer.echo("Initialized Git repository.")
+        # Init Git Repo
+        with console.status(
+            "[bold blue]Initializing Git repository...", spinner="dots"
+        ):
+            subprocess.run(
+                ["git", "init"], cwd=project_path, check=True, capture_output=True
+            )
+        console.print("[green]✔[/green] Initialized Git repository.")
 
-        # 6. Create Virtual Environment
-        typer.echo("Creating virtual environment (this may take a few seconds)...")
-        subprocess.run(
-            ["python", "-m", "venv", ".venv"],
-            cwd=project_path,
-            check=True,
-            capture_output=True,
+        # Create venv
+        with console.status(
+            "[bold cyan]Creating virtual environment (this may take a few seconds)...",
+            spinner="dots",
+        ):
+            subprocess.run(
+                ["python", "-m", "venv", ".venv"],
+                cwd=project_path,
+                check=True,
+                capture_output=True,
+            )
+        console.print("[green]✔[/green] Created virtual environment: .venv")
+
+        console.print("\n[bold green] Project scaffolded successfully![/bold green]")
+        console.print(
+            f"To start, run:\n  [bold cyan]cd {project_name} && source .venv/bin/activate[/bold cyan]\n"
         )
-        typer.echo("Created virtual environment: .venv")
 
     except subprocess.CalledProcessError as e:
-        # Decoding the binary stderr output back into a readable string
         error_msg = e.stderr.decode().strip()
-        typer.echo(f"Error executing system command: {error_msg}", err=True)
+        err_console.print(
+            f"[bold red]Error executing system command:[/bold red] {error_msg}"
+        )
         raise typer.Exit(code=1)
 
     except Exception as e:
-        typer.echo(f"An unexpected error occurred: {e}", err=True)
+        err_console.print(f"[bold red]An unexpected error occurred:[/bold red] {e}")
         raise typer.Exit(code=1)
 
 
