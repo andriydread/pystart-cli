@@ -1,4 +1,6 @@
-import subprocess  # 1. Added subprocess import
+import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 import typer
@@ -34,7 +36,6 @@ if __name__ == "__main__":
 
 
 def get_readme_content(project_name: str) -> str:
-    # We use a helper function so we can dynamically inject the project name
     return f"""# {project_name}
 
 A Python project scaffolded with `pystart`.
@@ -73,9 +74,12 @@ def create(project_name: str):
         )
         raise typer.Exit(code=1)
 
+    dir_created = False
+
     try:
         # Create dir
         project_path.mkdir(parents=True, exist_ok=False)
+        dir_created = True
         console.print(
             f"[green]✔[/green] Created directory: [blue]{project_path}[/blue]"
         )
@@ -95,19 +99,16 @@ def create(project_name: str):
         main_py_path.write_text(MAIN_PY_CONTENT, encoding="utf-8")
         console.print("[green]✔[/green] Generated: main.py")
 
-        # Init Git Repo
+        # Init Git Repo and First Commit
         with console.status(
             "[bold blue]Initializing Git repository...", spinner="dots"
         ):
-            # Run git init
             subprocess.run(
                 ["git", "init"], cwd=project_path, check=True, capture_output=True
             )
-            # Stage all generated files (README, main.py, .gitignore)
             subprocess.run(
                 ["git", "add", "."], cwd=project_path, check=True, capture_output=True
             )
-            # Create the very first commit
             subprocess.run(
                 ["git", "commit", "-m", "chore: initial project scaffold"],
                 cwd=project_path,
@@ -124,10 +125,11 @@ def create(project_name: str):
             spinner="dots",
         ):
             subprocess.run(
-                ["python", "-m", "venv", ".venv"],
+                [sys.executable, "-m", "venv", ".venv"],
                 cwd=project_path,
                 check=True,
                 capture_output=True,
+                text=True,
             )
         console.print("[green]✔[/green] Created virtual environment: .venv")
 
@@ -137,14 +139,28 @@ def create(project_name: str):
         )
 
     except subprocess.CalledProcessError as e:
-        error_msg = e.stderr.decode().strip()
+        error_msg = e.stderr.strip() if e.stderr else str(e)
         err_console.print(
             f"[bold red]Error executing system command:[/bold red] {error_msg}"
         )
+
+        if dir_created and project_path.exists():
+            shutil.rmtree(project_path)
+            err_console.print(
+                f"[yellow] Scaffolding failed[/yellow]. Cleaned up partial directory: [blue]{project_path}[/blue]"
+            )
+
         raise typer.Exit(code=1)
 
     except Exception as e:
         err_console.print(f"[bold red]An unexpected error occurred:[/bold red] {e}")
+
+        if dir_created and project_path.exists():
+            shutil.rmtree(project_path)
+            err_console.print(
+                f"[yellow] Scaffolding failed[/yellow]. Cleaned up partial directory: [blue]{project_path}[/blue]"
+            )
+
         raise typer.Exit(code=1)
 
 
