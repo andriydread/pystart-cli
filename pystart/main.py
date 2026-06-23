@@ -119,7 +119,7 @@ def create(
             )
         console.print("[green]✔[/green] Created virtual environment: .venv")
 
-        console.print("\n[bold green]🎉 Project scaffolded successfully![/bold green]")
+        console.print("\n[bold green] Project scaffolded successfully![/bold green]")
 
         # Display instructions depending on the chosen template
         if template == TemplateChoice.fastapi:
